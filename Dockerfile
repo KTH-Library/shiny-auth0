@@ -1,4 +1,4 @@
-FROM node:14.1.0
+FROM public.ecr.aws/nrgi/base-image:node-14.1.0
 
 # Install dependencies and Download and install shiny server
 RUN apt-get update && apt-get install -y  \
