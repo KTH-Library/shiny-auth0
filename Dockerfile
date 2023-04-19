@@ -1,35 +1,16 @@
-FROM public.ecr.aws/nrgi/base-image:node-14.1.0
+# syntax=docker/dockerfile:1.4
 
-# Install dependencies and Download and install shiny server
-RUN apt-get update && apt-get install -y  \
-    curl \
-    build-essential \
-    python \
-    python-setuptools \
-    python-pip \
-    gettext-base \
-    && pip install --index-url=https://pypi.python.org/simple/ supervisor &&\
-    cp /usr/bin/envsubst /usr/local/bin/envsubst &&\
-    rm -f version.txt ss-latest.deb && \
-    rm -rf /var/lib/apt/lists/*
+FROM node:lts-alpine3.17
 
-RUN curl -O -L https://github.com/papertrail/remote_syslog2/releases/download/v0.19/remote_syslog_linux_amd64.tar.gz \
-    && tar -zxf remote_syslog_linux_amd64.tar.gz  \
-    && cp remote_syslog/remote_syslog /usr/local/bin  \
-    && rm -r remote_syslog_linux_amd64.tar.gz \
-    && rm -r remote_syslog
+RUN apk add --no-cache \
+	curl tar bash tini \
+	gettext
 
-RUN mkdir /var/log/supervisor/
-# copy supervisord config
-COPY docker/supervisord.conf /etc/supervisord.conf
+WORKDIR /opt/code
 
+COPY package.json package-lock.json ./
+RUN npm install
+COPY . .
 
-COPY . /src/shiny-auth0/
-RUN cd /src/shiny-auth0/ && \
-    npm install
-
-WORKDIR /src/shiny-auth0
-
-RUN ["chmod", "+x", "/src/shiny-auth0/docker-entrypoint.sh"]
-
-CMD ["/src/shiny-auth0/docker-entrypoint.sh"]
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["sh", "-c", "envsubst < .env.example > .env && npm start"] 

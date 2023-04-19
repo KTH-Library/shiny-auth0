@@ -1,0 +1,4 @@
+services:
+  shiny-auth0:
+    image: shiny-auth0
+    env_file: ./myenv
